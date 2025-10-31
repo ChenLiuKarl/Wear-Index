@@ -46,10 +46,7 @@ inertia_z = 1250925  # Yaw inertia (kg·m^2)
 alpha_0 = 10  # Saturation angle in radians (10°)
 
 # Tire wear model parameters
-K_FuelMax = 2.12e-6  # s^2/m^3
-K_KMax = 1.62e-6  # s^2/m^3
-K_average = 1.2e-7
-
+K_average = 1.2e-7 # s^2/m^3
 K_law = 0.0125  # for wear law, not filtered parabolic function
 
 # Fancher tyre force model
@@ -622,60 +619,6 @@ def fetch_here_static_map(
         return None
 
 
-def draw_wear_gradient(draw, xx, yy, wear, *,
-                       width=2, as_points=False, point_radius=0.5, step=1,
-                       cmap="RdYlGn_r", vmin=0.0, vmax=None):
-    """
-    Draw a path or points colored by wear using a Matplotlib colormap.
-
-    """
-    # Ensure 1D arrays
-    xx   = np.asarray(xx,   dtype=float).reshape(-1)
-    yy   = np.asarray(yy,   dtype=float).reshape(-1)
-    wear = np.asarray(wear, dtype=float).reshape(-1)
-    step = max(int(step), 1)
-
-    if xx.size == 0 or yy.size == 0 or wear.size == 0:
-        return
-
-    # Subsample
-    xi = xx[::step].astype(int)
-    yi = yy[::step].astype(int)
-    wi = wear[::step]
-
-    # Normalization and colormap
-    if vmax is None:
-        vmax = 0.75*float(np.nanmax(wear)) if np.isfinite(wear).any() else 1.0
-    if vmax <= vmin:
-        vmax = vmin + 1.0  # avoid zero span
-    norm = mcolors.Normalize(vmin=vmin, vmax=vmax, clip=True)
-    cmap = mpl.colormaps.get_cmap(cmap) if isinstance(cmap, str) else cmap
-
-    def to_rgb255(rgba):
-    # rgba is a 4-tuple of floats in [0,1]
-        r, g, b = rgba[:3]
-        return (int(round(255 * r)),
-                int(round(255 * g)),
-                int(round(255 * b)))
-
-    if as_points:
-        for x, y, w in zip(xi, yi, wi):
-            # color = (255,0,0) if w > 0 else (0,255,0)
-            color = to_rgb255(cmap(norm(w)))
-            draw.ellipse([x - point_radius, y - point_radius,
-                          x + point_radius, y + point_radius],
-                         fill=color, outline=None)
-    else:
-        if len(xi) < 2:
-            return
-        # Color per segment using average wear of endpoints
-        seg_w = 0.5 * (wi[:-1] + wi[1:])
-        for i in range(len(xi) - 1):
-            color = to_rgb255(cmap(norm(seg_w[i])))
-            draw.line([(xi[i], yi[i]), (xi[i+1], yi[i+1])],
-                      fill=color, width=width)
-
-
 def draw_wear(draw, xx, yy, wear, point_radius=1, step=1):
     """
     Draw the line and then add sections with wear on it.
@@ -686,9 +629,6 @@ def draw_wear(draw, xx, yy, wear, point_radius=1, step=1):
     yy   = np.asarray(yy,   dtype=float).reshape(-1)
     wear = np.asarray(wear, dtype=float).reshape(-1)
     step = max(int(step), 1)
-
-    if xx.size == 0 or yy.size == 0 or wear.size == 0:
-        return
 
     # Subsample
     xi = xx[::step].astype(int)
